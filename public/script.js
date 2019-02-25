@@ -88,8 +88,11 @@ function joinLobby(){
 }
 
 function recieveLines(data){
+
+    console.log(data);
+
     for (let i = 0; i < data.lines; i++) {
-        garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor1)});
+        garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor)});
     }
 }
 

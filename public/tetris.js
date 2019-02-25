@@ -36,12 +36,13 @@ var garbageBlockColor1 = "#ffd866";
 var garbageBlockColor2 = "#ff59a9";
 var garbageBlockColor = "#939393";
 
-garbageBarLineTime = 500;
+garbageBarLineTime = 1000;
 
 var attacking = [];
 var defending = [];
 
 var attackMode = 0;
+var lastAttackMode = 0;
 
 var numKOTargets = 1;
 var numRadnTargets = 1;
@@ -74,13 +75,13 @@ $(document).on('keydown', function(e){
     if(gameStarted)
     {
         if(e.keyCode == 87) // W -- KOS
-            attackMode = 0;
+            setAttackMode(0);
         if(e.keyCode == 65) // A -- Random
-            attackMode = 0;
+            setAttackMode(1);
         if(e.keyCode == 68) // D -- Badges
-            attackMode = 0;
+            setAttackMode(2);
         if(e.keyCode == 83) // S -- Attacking
-            attackMode = 0;
+            setAttackMode(3);
 
         if(e.keyCode == 37){ // Left
             currentPiece.move(-1, 0);
@@ -177,7 +178,7 @@ function startGame(){
         location.reload();
     }
 
-    attackMode = 0;
+    setAttackMode(0);
 
     nextPiece();
     animate();
@@ -246,6 +247,7 @@ function animate(){
     updateAttackMode();
     drawAttackMode();
     drawDefendingUI();
+    drawAttackingUI();
 }
 
 var boardsPadding = 5;
@@ -356,6 +358,16 @@ function eliminateFullRows()
         for (let r = 0; r < rowsDeleted.length; r++) { //bottom to top
             const row = rowsDeleted[r];
 
+            if(garbageBarLines.length > 0)
+            {
+                garbageBarLines.shift();
+
+                garbageBarLines.forEach(line => {
+                    line.block.row++;
+                });
+            }
+                
+
             for (let x = numberOfRows; x >= 0; x--) {
                 
                 if(x < row)
@@ -415,28 +427,38 @@ function addGarbageLine(column){
             }
 
             if(!isPartOfCurrentPiece)
-            {
+            {                   
                 if(x-1 < 0)
-                    endGame = true;
-                    
-                grid.columns[i][x-1] = grid.columns[i][x];
+                {
+                    if(grid.columns[i][x] != null)
+                        endGame = true
+                }
+                else
+                {
+                    if(grid.columns[i][x] != null)
+                        grid.columns[i][x].row -= 1;
+
+                    grid.columns[i][x-1] = grid.columns[i][x];
+                }
             }   
         }   
     }      
     
     for (let i = 0; i < numberOfColumns; i++) {
-        if(column != i)
+        if(i != column)
             grid.columns[i][19] = new Block(i, 19, garbageBlockColor);
+        else
+            grid.columns[i][19] = null;
     }
     
     if(endGame)
         stopGame();
-
 }
 
 function stopGame(){
     gameOver = true;
     backgroundColor = "#f47264";
+    drawGrid();
 }
 
 function updateGarbageBar(){
@@ -454,7 +476,6 @@ function updateGarbageBar(){
 }
 
 function drawGarbageBar(){
-
     var x = playStartX - blockSize - blockPadding * 3;
     var y = playStartY + blockSize * 4 + blockPadding * 4;
 
@@ -464,17 +485,16 @@ function drawGarbageBar(){
     for (let i = 0; i < garbageBarLines.length; i++) {
         var block = garbageBarLines[i].block;
 
-        if(block.time > 350)
-            block.color = garbageBlockColor;
-        else if(block.time > 200)
+        if(garbageBarLines[i].time > 800)
             block.color = garbageBlockColor2;
+        else if(garbageBarLines[i].time > 500)
+            block.color = garbageBlockColor1;
 
         block.draw(x + blockPadding, y + blockPadding);
     }
 }
 
 function drawNextPieces(){
-
     var x = playStartX + playWidth + blockPadding;
     var y = playStartY;
 
@@ -604,6 +624,10 @@ function drawAttackMode(){
     ctx.globalAlpha = 1;
 }
 
+function setAttackMode(mode){
+    attackMode = mode;
+}
+
 function updateAttackMode()
 {
     var lastAttacking = attacking;
@@ -612,6 +636,9 @@ function updateAttackMode()
     switch(attackMode)
     {
         case 0: // KO's
+
+            lastAttackMode = attackMode;
+
             var closestToDeath = [];
 
             boards.forEach(board => {
@@ -640,6 +667,11 @@ function updateAttackMode()
         break;
         case 1: // Random
 
+            if(attackMode == lastAttackMode)
+                return;
+            else
+                lastAttackMode = attackMode;
+
             var players = [];
 
             boards.forEach(board => {
@@ -655,7 +687,11 @@ function updateAttackMode()
         break;
         case 2: // Badges
 
-            var players = playerBoards;
+            lastAttackMode = attackMode;
+
+            return;
+
+            var players = playerBoards.values;
 
             players.sort(function (player1, player2) {
                 if (player1.badges > player2.badges) return -1;
@@ -665,11 +701,20 @@ function updateAttackMode()
             attacking = players.slice(0, numBadgesTargets);
         break;
         case 3: // Attackers
-            attacking = defending;
+
+            lastAttackMode = attackMode;
+
+            attacking = [];
+
+            defending.forEach(defend => {
+                attacking.push({id: defend});
+            });
+            
         break;
     }
 
     var sentAttacking = [].concat(attacking);
+
 
     for (let i = sentAttacking.length - 1; i >= 0; i--) { //Remove ids that we are still attacking
         
@@ -679,7 +724,8 @@ function updateAttackMode()
             if(sentAttacking[i].id == oldAttack.id)
             {
                 sentAttacking.splice(i, 1);   
-                lastAttacking.splice(x, 1);   
+                lastAttacking.splice(x, 1);
+                break;
             }
         }
     }
@@ -704,10 +750,72 @@ function drawDefendingUI(){
 
         var board = playerBoards[defend];
         var pos = getOtherPlayerBoardPos(board);
-        ctx.lineTo(pos.x + boardsWidth / 2, pos.y + boardsWidth / 2);
+        ctx.lineTo(pos.x + boardsWidth / 2, pos.y + boardsHeight / 2);
         ctx.stroke();
     });
 }
+
+function drawAttackingUI(){
+    
+    attacking.forEach(attack => {
+        var board = playerBoards[attack.id];
+        var pos = getOtherPlayerBoardPos(board);
+
+        ctx.globalAlpha = .3;
+
+        ctx.beginPath();
+        ctx.strokeStyle = "#63ffdd";
+        ctx.lineWidth = 3;
+        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth * 3/4, 6, 0, false);
+        ctx.stroke();
+
+        ctx.globalAlpha = 1;
+
+
+        ctx.lineWidth = 5;
+
+        ctx.beginPath();
+        ctx.strokeStyle = "#8cf3ff";
+        ctx.fillStyle = "#38bc9f";
+        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2, 6, 0, false);
+        ctx.stroke();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.strokeStyle = "#8cf3ff";
+        ctx.fillStyle = "#51e2c3";
+        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2 - 6, 6, 0, false);
+        ctx.stroke();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.strokeStyle = "#8cf3ff";
+        ctx.fillStyle = "#51e2c3";
+        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2 - 20, 6, 0, false);
+        ctx.stroke();
+        ctx.fill();
+
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 1;
+    });
+
+    
+}
+
+function polygon(ctx, x, y, radius, sides, startAngle, anticlockwise) {
+    if (sides < 3) return;
+    var a = (Math.PI * 2)/sides;
+    a = anticlockwise?-a:a;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(startAngle);
+    ctx.moveTo(radius,0);
+    for (var i = 1; i < sides; i++) {
+      ctx.lineTo(radius*Math.cos(a*i),radius*Math.sin(a*i));
+    }
+    ctx.closePath();
+    ctx.restore();
+  }
 
 
 
