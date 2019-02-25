@@ -1,0 +1,161 @@
+//Canvas
+var canvas = document.getElementById('mainCanvas');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+var ctx = canvas.getContext('2d');
+
+//Sockets
+var socket;
+var clientId;
+
+//Game Setup Variables
+var numberOfPlayers;
+var playerBoards = {};
+
+var playersPerRow = 7;
+var playersPerColumn = 7;
+
+var numberOfColumns = 10;
+var numberOfRows = 20;
+
+function setup(){
+    socket = io.connect('http://localhost:8080');
+    socket.on('updateLobby', updateLobby);
+    socket.on('startGame', commenceGame);
+    socket.on('gridUpdates', updateGrids);
+    socket.on("attacking", setDefending);
+    socket.on('lines', recieveLines);
+
+    joinLobby();
+}
+
+function commenceGame(data){
+
+    clientId = socket.io.engine.id;
+    var numberOfPlayers = data.players.length - 1;
+
+    var playerIds = Object.values(data.players);
+    
+    for (let i = 0; i < playerIds.length; i++) {
+        const playerId = playerIds[i];
+
+        if(playerId == clientId)
+            playerIds.splice(i, 1);
+        
+    }
+
+    var rowNum = 0;
+    var columnNum = 0;
+    var side = 0;
+
+    for (let i = 0; i < numberOfPlayers; i++) {
+        var grid = {columns: []};
+
+        if(i == numberOfPlayers / 2)
+        {
+            rowNum = 0;
+            columnNum = 0
+            side++;
+        }
+
+        for (let n = 0; n < numberOfColumns; n++) {
+            var column = [];
+    
+            for (let x = 0; x < numberOfRows; x++) {
+                column.push(null);
+            }
+    
+            grid.columns.push(column);
+        }
+        
+        playerBoards[playerIds[i]] = {id: playerIds[i], grid: grid, column: columnNum, row: rowNum, side: side};
+
+        columnNum++;
+
+        if(columnNum >= playersPerColumn)
+        {
+            rowNum++;
+            columnNum = 0;
+        }
+    }
+
+    startGame();
+}
+
+function joinLobby(){
+    $('#joinLobby').hide();
+    socket.emit('joinLobby');
+}
+
+function recieveLines(data){
+    for (let i = 0; i < data.lines; i++) {
+        garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor1)});
+    }
+}
+
+function setDefending(data){
+
+    console.log(data);
+
+    if(data.add == true)
+        defending.push(data.id);
+    else
+        defending.splice(defending.indexOf(data.id), 1);
+}
+
+function updateGrids(data){
+    for (let i = 0; i < data.length; i++) {
+        const update = data[i];
+
+        updateGrid(playerBoards[update.id], {row: update.row, column: update.column, color: update.color});
+    }
+}
+
+function updateLobby(playersInLobby){
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    var lobbyX = canvas.width / 45;
+    var lobbyY = canvas.width / 45;
+
+    var padding = canvas.width / 80;
+    var lobbyClientSize = canvas.width / 100;
+    var playersPerRow = 8;
+
+    var lobbySize = (lobbyClientSize + padding) * playersPerRow + padding;
+    
+    //Draw Lobby
+    ctx.strokeStyle = "#429df7";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(lobbyX,lobbyY, lobbySize, lobbySize);
+
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "black";
+    ctx.fillText("number of players: " + playersInLobby, lobbyX, lobbyY + lobbySize + padding * 2);
+    ctx.font = "15px Arial";
+    ctx.fillText("game will start at 99", lobbyX, lobbyY + lobbySize + padding * 4);
+
+    var clientX = 0;
+    var clientY = 0;
+    var row = 1;
+
+    for (let i = 0; i < playersInLobby; i++) {
+
+
+        ctx.fillStyle = "#429df7";
+        ctx.strokeStyle = "#429df7";;
+        ctx.lineWidth = 2;
+        ctx.fillRect(padding + lobbyX + clientX, padding + lobbyY + clientY, lobbyClientSize, lobbyClientSize);
+        
+        clientX += padding + lobbyClientSize;
+
+        if((i + 1)/ row - playersPerRow == 0)
+        {
+            clientX = 0;
+            clientY += padding + lobbyClientSize;
+            row++;
+        }
+    }
+}
+
+setup();
