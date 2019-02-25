@@ -2,13 +2,13 @@ var express = require('express');
 var socket = require('socket.io');
 
 var app = express();
-
 var server = app.listen(8080, "0.0.0.0");
+//var server = app.listen(8080, "0.0.0.0");
 app.use(express.static('public'));
 var io = require('socket.io').listen(server);
 
 var virtualServers = {};
-var numberOfClientsPerServer = 4;
+var numberOfClientsPerServer = 3;
 
 function AddServer(){
     var id = uniqueId();
@@ -31,6 +31,7 @@ function addClientToServer(vServer, socket){
         vServer.inLobby = false;
     
         var clients = Object.keys(virtualServers[vServer.id].clients);
+        virtualServers[vServer.id].place = clients.length + 2;
         io.to(vServer.id).emit('startGame', {players: clients});
     }
 }
@@ -78,6 +79,13 @@ function newConnetcion(socket){
             }
     
         }
+    });
+
+    socket.on('KO', function()
+    {
+        var place = virtualServers[socket.serverId].place;
+        socket.broadcast.to(socket.serverId).emit('KO', {id: socket.id, place: place});
+        virtualServers[socket.serverId].place--;
     });
 
     socket.on('attacking', function(data)

@@ -18,13 +18,19 @@ var playersPerColumn = 7;
 var numberOfColumns = 10;
 var numberOfRows = 20;
 
+var maxGarbageLines = 16;
+
+var place = 99;
+
 function setup(){
-    socket = io.connect('http://localhost:8080');
+    socket = io.connect('http://' + $('#connectTo').val());
+    //socket = io.connect('http://99.30.176.150:8080');
     socket.on('updateLobby', updateLobby);
     socket.on('startGame', commenceGame);
     socket.on('gridUpdates', updateGrids);
     socket.on("attacking", setDefending);
     socket.on('lines', recieveLines);
+    socket.on('KO', knockOut);
 
     joinLobby();
 }
@@ -33,7 +39,7 @@ function commenceGame(data){
 
     clientId = socket.io.engine.id;
     var numberOfPlayers = data.players.length - 1;
-
+    place = numberOfPlayers + 1;
     var playerIds = Object.values(data.players);
     
     for (let i = 0; i < playerIds.length; i++) {
@@ -68,7 +74,7 @@ function commenceGame(data){
             grid.columns.push(column);
         }
         
-        playerBoards[playerIds[i]] = {id: playerIds[i], grid: grid, column: columnNum, row: rowNum, side: side};
+        playerBoards[playerIds[i]] = {id: playerIds[i], grid: grid, column: columnNum, row: rowNum, side: side, alive: true};
 
         columnNum++;
 
@@ -83,22 +89,36 @@ function commenceGame(data){
 }
 
 function joinLobby(){
+    $("#connectTo").hide();
     $('#joinLobby').hide();
     socket.emit('joinLobby');
 }
 
+function knockOut(data){
+
+    if(!gameOver)
+    {
+        place--;
+
+        if(place == 1)
+        {
+            stopGame(true);
+        }
+    }
+
+    playerBoards[data.id].alive = false;
+    playerBoards[data.id].place = data.place + 1;
+}
+
 function recieveLines(data){
 
-    console.log(data);
-
     for (let i = 0; i < data.lines; i++) {
-        garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor)});
+        if(garbageBarLines.length < maxGarbageLines)
+            garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor)});
     }
 }
 
 function setDefending(data){
-
-    console.log(data);
 
     if(data.add == true)
         defending.push(data.id);
@@ -161,4 +181,4 @@ function updateLobby(playersInLobby){
     }
 }
 
-setup();
+// setup();

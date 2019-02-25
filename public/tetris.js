@@ -13,7 +13,7 @@ var blockCurveRadius = 5;
 
 var requestAnimationFrameId;
 
-var dropInterval = 20;
+var dropInterval = 30;
 var dropTimer = 0;
 
 var currentPiece;
@@ -28,6 +28,8 @@ var sColor = "#74f442";
 var zColor = "#fff45b";
 var tColor = "#d07fff";
 var iColor = "#8cffe8";
+
+var playBackgroundColor = "#606566";
 
 var defendingLineColor = "#fff959";
 
@@ -60,6 +62,7 @@ var down = false;
 
 var gameStarted = false;
 var gameOver = false;
+var won = false;
 
 var playHeight = (blockSize + blockPadding) * numberOfRows + blockPadding;
 var playWidth = (blockSize + blockPadding) * numberOfColumns + blockPadding;
@@ -72,7 +75,7 @@ var holdHeight = (blockSize + blockPadding) * 4 - blockPadding;
 
 $(document).on('keydown', function(e){
 
-    if(gameStarted)
+    if(gameStarted && !gameOver)
     {
         if(e.keyCode == 87) // W -- KOS
             setAttackMode(0);
@@ -186,57 +189,82 @@ function startGame(){
 
 function animate(){
 
-    if(gameOver)
-        return;
-
-    if(down)
-    {
-        if(verticalTimer < verticalTime)
-        verticalTimer++;
-        else{
-            verticalTimer = 0;
-            currentPiece.move(0, 1);
-        }
-    }
-
-    if(left)
-    {
-        if(horizontalTimer < horizontalTime)
-            horizontalTimer++;
-        else{
-            horizontalTimer = 0;
-            currentPiece.move(-1, 0);
-        }
-    }
-    else if(right)
-    {
-        if(horizontalTimer < horizontalTime)
-            horizontalTimer++;
-        else{
-            horizontalTimer = 0;
-            currentPiece.move(1, 0);
-        }
-    }
-
     requestAnimationFrameId = requestAnimationFrame(animate);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if(dropTimer < dropInterval)
-        dropTimer++;
-    else
+    if(!gameOver)
     {
-        if(currentPiece != null && currentPiece.move(0, 1)){ //block has reached the bottom or hit something;
-            nextPiece();
+        if(down)
+        {
+            if(verticalTimer < verticalTime)
+            verticalTimer++;
+            else{
+                verticalTimer = 0;
+                currentPiece.move(0, 1);
+            }
         }
-        dropTimer  = 0;
+
+        if(left)
+        {
+            if(horizontalTimer < horizontalTime)
+                horizontalTimer++;
+            else{
+                horizontalTimer = 0;
+                currentPiece.move(-1, 0);
+            }
+        }
+        else if(right)
+        {
+            if(horizontalTimer < horizontalTime)
+                horizontalTimer++;
+            else{
+                horizontalTimer = 0;
+                currentPiece.move(1, 0);
+            }
+        }
+
+        if(dropTimer < dropInterval)
+            dropTimer++;
+        else
+        {
+            if(currentPiece != null && currentPiece.move(0, 1)){ //block has reached the bottom or hit something;
+                nextPiece();
+            }
+            dropTimer  = 0;
+        }
+
     }
 
     drawGrid();
-    updateGarbageBar();
     drawGarbageBar();
     drawNextPieces();
     drawHold();
-    drawPhantomPiece();
+
+    if(gameOver)
+    {
+        ctx.fillStyle = playBackgroundColor;;
+        ctx.globalAlpha = .7;
+        ctx.fillRect(playStartX, playStartY, playWidth, playHeight);
+        ctx.globalAlpha = 1;
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#f24147";
+
+        var endText = "GAME OVER";
+
+        if(won)
+        {
+            ctx.fillStyle = "#fffeed";
+            endText = "Victory Royale";
+        }
+
+        ctx.font = "bold " + playWidth / 7.5+ "px Arial";
+        ctx.fillText(endText, playStartX + playWidth / 2, playStartY + playHeight / 2, playWidth);
+        ctx.font = "bold " + playWidth / 10 + "px Arial";
+
+        ctx.fillStyle = "white";
+        ctx.fillText("PLACE: " + place, playStartX + playWidth / 2, playStartY + playHeight / 2 + playWidth / 6, playWidth);
+    }
 
     var playerBoardValues = Object.values(playerBoards);
 
@@ -244,10 +272,18 @@ function animate(){
         drawOtherPlayerBoard(board);
     });
 
-    updateAttackMode();
-    drawAttackMode();
-    drawDefendingUI();
-    drawAttackingUI();
+    if(!gameOver)
+    {
+        updateGarbageBar();
+        drawPhantomPiece();
+
+        updateAttackMode();
+        drawAttackMode();
+        drawDefendingUI();
+        drawAttackingUI();
+    } 
+
+    drawPlace();
 }
 
 var boardsPadding = 5;
@@ -277,8 +313,22 @@ function getOtherPlayerBoardPos(board){
 
 function drawOtherPlayerBoard(board)
 {
-    ctx.globalAlpha = .5;
     var pos = getOtherPlayerBoardPos(board);
+
+    if(!board.alive)
+    {
+        ctx.globalAlpha = 1;
+        ctx.font = "bold " + boardsWidth / 2 + "px Arial";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "white";
+        ctx.fillText("K.O.", pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth);
+        ctx.font = boardsWidth / 3 + "px Arial";
+        ctx.fillText(board.place, pos.x + boardsWidth / 2, pos.y + boardsHeight / 1.5, boardsWidth);
+
+        return;
+    }
+
+    ctx.globalAlpha = .5;
 
     ctx.fillStyle = "#606566";
     ctx.fillRect(pos.x, pos.y, boardsWidth, boardsHeight);
@@ -366,7 +416,6 @@ function eliminateFullRows()
                     line.block.row++;
                 });
             }
-                
 
             for (let x = numberOfRows; x >= 0; x--) {
                 
@@ -385,9 +434,9 @@ function eliminateFullRows()
 
         var numberOfGarbageLines = 0;
 
-        if(rowsDeleted.length == 1)
-            numberOfGarbageLines = 5;
-        else if(rowsDeleted.length == 2)
+        // if(rowsDeleted.length == 1)
+        //     numberOfGarbageLines = 5;
+        if(rowsDeleted.length == 2)
             numberOfGarbageLines = 1;
         else if(rowsDeleted.length == 3)
             numberOfGarbageLines = 2;
@@ -425,6 +474,7 @@ function addGarbageLine(column){
                         isPartOfCurrentPiece = true;
                 });
             }
+            
 
             if(!isPartOfCurrentPiece)
             {                   
@@ -452,13 +502,19 @@ function addGarbageLine(column){
     }
     
     if(endGame)
-        stopGame();
+        stopGame(false);
 }
 
-function stopGame(){
+function stopGame(win){
+    won = win;
+
+    attacking.forEach(attack => {
+        attack["add"] = false;
+    });
+
+    socket.emit("attacking", attacking);
+    socket.emit('KO');
     gameOver = true;
-    backgroundColor = "#f47264";
-    drawGrid();
 }
 
 function updateGarbageBar(){
@@ -471,6 +527,9 @@ function updateGarbageBar(){
         else{
             addGarbageLine(garbageBarLine.column);
             garbageBarLines.splice(i, 1);
+            garbageBarLines.forEach(line => {
+                line.block.row++;
+            });
         }
     }
 }
@@ -492,6 +551,13 @@ function drawGarbageBar(){
 
         block.draw(x + blockPadding, y + blockPadding);
     }
+}
+
+function drawPlace(){
+    ctx.font = playWidth / 12 + "px Arial";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "white";
+    ctx.fillText(place + "/99", playStartX + playWidth + blockPadding, playStartY + (blockSize + blockPadding) * numUpcomingPieces * 3 + blockPadding + blockSize * 1.5);
 }
 
 function drawNextPieces(){
@@ -542,7 +608,7 @@ function drawHold(){
 }
 
 function drawGrid(){
-    ctx.fillStyle = "#606566";
+    ctx.fillStyle = playBackgroundColor;
     ctx.fillRect(playStartX, playStartY, playWidth, playHeight);
 
     for (let i = 0; i < grid.columns.length; i++) {
@@ -570,7 +636,7 @@ function drawAttackMode(){
     ctx.globalAlpha = .5;
     ctx.textAlign = 'center';
 
-    var textY = -5;
+    var textY = playWidth / -90;
 
     var backgroundColor = "#b2b2b2";
     var highlightColor = defendingLineColor;
@@ -595,6 +661,8 @@ function drawAttackMode(){
             attackColor = highlightColor;
         break;
     }
+
+    ctx.font = playWidth / 18 + "px Arial";
 
     // KO's
         ctx.globalAlpha = .5;
@@ -632,6 +700,13 @@ function updateAttackMode()
 {
     var lastAttacking = attacking;
     var boards = Object.values(playerBoards);
+
+    for (let i = boards.length - 1; i >= 0; i--) {
+        const player = boards[i];
+
+        if(!player.alive)
+            boards.splice(i, 1);
+    }
 
     switch(attackMode)
     {
@@ -691,14 +766,21 @@ function updateAttackMode()
 
             return;
 
-            var players = playerBoards.values;
+            // var players = playerBoards.values;
 
-            players.sort(function (player1, player2) {
-                if (player1.badges > player2.badges) return -1;
-                if (player1.badges < player2.badges) return 1;
-            });
+            // for (let i = players.length - 1; i >= 0; i--) {
+            //     const player = players[i];
 
-            attacking = players.slice(0, numBadgesTargets);
+            //     if(!player.alive)
+            //         players.splice(i, 1);
+            // }
+
+            // players.sort(function (player1, player2) {
+            //     if (player1.badges > player2.badges) return -1;
+            //     if (player1.badges < player2.badges) return 1;
+            // });
+
+            // attacking = players.slice(0, numBadgesTargets);
         break;
         case 3: // Attackers
 
@@ -750,6 +832,10 @@ function drawDefendingUI(){
 
         var board = playerBoards[defend];
         var pos = getOtherPlayerBoardPos(board);
+
+        if(!board.alive)
+            return;
+
         ctx.lineTo(pos.x + boardsWidth / 2, pos.y + boardsHeight / 2);
         ctx.stroke();
     });
@@ -770,7 +856,6 @@ function drawAttackingUI(){
         ctx.stroke();
 
         ctx.globalAlpha = 1;
-
 
         ctx.lineWidth = 5;
 
@@ -1004,9 +1089,6 @@ function nextPiece(){
 
             for (let x = 0; x < grid.columns[i].length; x++) {
 
-                if(i == 0 && x == 19)
-                    console.log("bottom left");
-
                 var last = lastGrid.columns[i][x];
                 var current = grid.columns[i][x];
 
@@ -1021,12 +1103,22 @@ function nextPiece(){
         }
     }
 
-    //console.log("lastGrid: " + lastGrid.columns[0][19] + " , nowGrid: " + grid.columns[0][19]);
     lastGrid = copyGrid(grid);
-    //console.log("lastGrid: " + lastGrid.columns[0][19] + " , nowGrid: " + grid.columns[0][19]);
         
     if(updates.length > 0)
         socket.emit('gridUpdates', updates);
+
+    nextCurrentPieceCheck = getPiece(nextPieces[0].type, false);
+
+    for (let i = 0; i < nextCurrentPieceCheck.blocks.length; i++) {
+        const block = nextCurrentPieceCheck.blocks[i];
+
+        if(grid.columns[block.column][block.row] != null)
+        {
+            stopGame(false);
+            return;
+        }
+    }
 
     currentPiece = getPiece(nextPieces[0].type, true);
     nextPieces.splice(0, 1);
@@ -1185,10 +1277,7 @@ function Piece(blocks, pivot, type)
             if(x2 != null && y2 != null)
             {
                 if(block.checkForBlocksDown(y2 - block.row, this.blocks) || block.checkForBlocksSide(x2 - block.column, this.blocks))
-                {
-                    console.log("bad");
                     return;
-                }
                     
                 newPositions.push({x: x2, y: y2});
             }
