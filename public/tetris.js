@@ -25,6 +25,7 @@ var alreadySwitchedHold = false;
 var rColor = "#5c7af2";
 var lColor = "#fcb04e";
 var sColor = "#74f442";
+var sqColor = "#f9fc6a";
 var zColor = "#fff45b";
 var tColor = "#d07fff";
 var iColor = "#8cffe8";
@@ -1028,6 +1029,18 @@ function getBlocksS(){
 
     return blocks;
 }
+function getBlocksSQ(){
+
+    var blocks = [];
+
+    //Rotation 1
+    blocks.push(new Block(3, 1, sqColor));
+    blocks.push(new Block(4, 1, sqColor));
+    blocks.push(new Block(3, 0, sqColor));
+    blocks.push(new Block(4, 0, sqColor));
+
+    return blocks;
+}
 
 function getPiece(i, spawn){
     if(i == null)
@@ -1053,6 +1066,9 @@ function getPiece(i, spawn){
             blocks = getBlocksS();
         break;
         case 5:
+            blocks = getBlocksSQ();
+        break;
+        case 6:
             blocks = getBlocksT();
         break;
     }
@@ -1068,10 +1084,10 @@ function getPiece(i, spawn){
 }
 
 function newNextPiece(){
-    var type = Math.floor(Math.random() * 6);
+    var type = Math.floor(Math.random() * 7);
 
     if(nextPieces[nextPieces.length - 1] && type == nextPieces[nextPieces.length - 1].type)
-        type = Math.floor(Math.random() * 6);
+        type = Math.floor(Math.random() * 7);
 
     nextPieces.push(getPiece(type, false));
 }
