@@ -7,3 +7,15 @@
     position: absolute;
     z-index: -1;
 }
+
+#victoryRoyale{
+    visibility: hidden;
+    position:absolute;
+    top: 30%;
+    left:0;
+    right:0;
+    bottom: 70%;
+    margin:auto;
+
+    height: 5vw;
+}

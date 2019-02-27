@@ -22,11 +22,14 @@ var numUpcomingPieces = 5;
 var holdPiece;
 var alreadySwitchedHold = false;
 
+var winNoise = new Audio('audio/royaleMusic.mp3');
+var pieceLandNoise = new Audio('audio/pieceLand.mp3')
+
 var rColor = "#5c7af2";
 var lColor = "#fcb04e";
 var sColor = "#74f442";
 var sqColor = "#f9fc6a";
-var zColor = "#fff45b";
+var zColor = "#ff6666";
 var tColor = "#d07fff";
 var iColor = "#8cffe8";
 
@@ -126,7 +129,7 @@ $(document).on('keydown', function(e){
             }
             else{
                 holdPiece = getPiece(currentPiece.type, false);;
-                nextPiece();
+                nextPiece(true);
                 alreadySwitchedHold = true;
             }
             
@@ -139,7 +142,6 @@ $(document).on('keydown', function(e){
 });
 
 $(document).on('keyup', function(e){
-
     if(gameStarted)
     {
         if(e.keyCode == 37){ // Left
@@ -184,7 +186,7 @@ function startGame(){
 
     setAttackMode(0);
 
-    nextPiece();
+    nextPiece(true);
     animate();
 }
 
@@ -253,18 +255,17 @@ function animate(){
 
         var endText = "GAME OVER";
 
-        if(won)
+        if(!won)
         {
-            ctx.fillStyle = "#fffeed";
-            endText = "Victory Royale";
+            ctx.font = "bold " + playWidth / 7.5+ "px Arial";
+            ctx.fillText(endText, playStartX + playWidth / 2, playStartY + playHeight / 2, playWidth);
+            ctx.font = "bold " + playWidth / 10 + "px Arial";
+
+            ctx.fillStyle = "white";
+            ctx.fillText("PLACE: " + place, playStartX + playWidth / 2, playStartY + playHeight / 2 + playWidth / 6, playWidth);
         }
 
-        ctx.font = "bold " + playWidth / 7.5+ "px Arial";
-        ctx.fillText(endText, playStartX + playWidth / 2, playStartY + playHeight / 2, playWidth);
-        ctx.font = "bold " + playWidth / 10 + "px Arial";
-
-        ctx.fillStyle = "white";
-        ctx.fillText("PLACE: " + place, playStartX + playWidth / 2, playStartY + playHeight / 2 + playWidth / 6, playWidth);
+        
     }
 
     var playerBoardValues = Object.values(playerBoards);
@@ -508,6 +509,9 @@ function addGarbageLine(column){
 
 function stopGame(win){
     won = win;
+
+    if(win)
+        winNoise.play();
 
     attacking.forEach(attack => {
         attack["add"] = false;
@@ -1092,7 +1096,16 @@ function newNextPiece(){
     nextPieces.push(getPiece(type, false));
 }
 
-function nextPiece(){
+function nextPiece(dontPlayNoise){
+
+    if(!dontPlayNoise)
+    {
+        pieceLandNoise.pause();
+        pieceLandNoise.currentTime = 0;
+        pieceLandNoise.play();
+    }
+        
+
     alreadySwitchedHold = false;
     eliminateFullRows();
 

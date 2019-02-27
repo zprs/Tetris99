@@ -8,7 +8,7 @@ app.use(express.static('public'));
 var io = require('socket.io').listen(server);
 
 var virtualServers = {};
-var numberOfClientsPerServer = 3;
+var numberOfClientsPerServer = 4;
 
 function AddServer(){
     var id = uniqueId();
@@ -83,6 +83,9 @@ function newConnetcion(socket){
 
     socket.on('KO', function()
     {
+        if(!virtualServers[socket.serverId])
+            return;
+
         var place = virtualServers[socket.serverId].place;
         socket.broadcast.to(socket.serverId).emit('KO', {id: socket.id, place: place});
         virtualServers[socket.serverId].place--;

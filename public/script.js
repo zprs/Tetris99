@@ -103,6 +103,7 @@ function knockOut(data){
         if(place == 1)
         {
             stopGame(true);
+            $('#victoryRoyale').css('visibility', 'visible');
         }
     }
 
@@ -111,7 +112,6 @@ function knockOut(data){
 }
 
 function recieveLines(data){
-
     for (let i = 0; i < data.lines; i++) {
         if(garbageBarLines.length < maxGarbageLines)
             garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor)});
@@ -119,7 +119,6 @@ function recieveLines(data){
 }
 
 function setDefending(data){
-
     if(data.add == true)
         defending.push(data.id);
     else
