@@ -8,7 +8,7 @@ app.use(express.static('public'));
 var io = require('socket.io').listen(server);
 
 var virtualServers = {};
-var numberOfClientsPerServer = 4;
+var numberOfClientsPerServer = 3;
 
 function AddServer(){
     var id = uniqueId();
@@ -21,7 +21,7 @@ function AddServer(){
 function addClientToServer(vServer, socket){
     console.log("New client on server with id: " + vServer.id + " - number of clients on server: " + (ObjectSize(vServer.clients) + 1));
     socket.serverId = vServer.id;
-    vServer.clients[socket.id] = {socket: socket};
+    vServer.clients[socket.id] = {socket: socket, badgePoints: 0, lineMultiplier: 1};
 
     socket.join(vServer.id);
     updateLobby(vServer);
@@ -31,7 +31,7 @@ function addClientToServer(vServer, socket){
         vServer.inLobby = false;
     
         var clients = Object.keys(virtualServers[vServer.id].clients);
-        virtualServers[vServer.id].place = clients.length + 2;
+        virtualServers[vServer.id].place = clients.length;
         io.to(vServer.id).emit('startGame', {players: clients});
     }
 }
@@ -77,14 +77,35 @@ function newConnetcion(socket){
                     addClientToServer(newServer, socket);
                 }
             }
-    
         }
     });
 
-    socket.on('KO', function()
+    socket.on('KO', function(data)
     {
         if(!virtualServers[socket.serverId])
+        {
+            console.log('\x1b[31m%s\x1b[0m', "[ERROR]","Server with id: " + socket.serverId + " Not Found");
             return;
+        }
+            
+        if(virtualServers[socket.serverId].clients[data.attackerId])
+        {
+            virtualServers[socket.serverId].clients[data.attackerId].badgePoints += virtualServers[socket.serverId].clients[socket.id].badgePoints;
+            var badgePoints = virtualServers[socket.serverId].clients[data.attackerId].badgePoints;
+
+            socket.broadcast.to(socket.serverId).emit("badges", {playerId: data.attackerId, badges: badgePoints});
+
+            if(badgePoints >= 30)
+                virtualServers[socket.serverId].clients[data.attackerId].lineMultiplier = 2;
+            else if(badgePoints >= 14)
+                virtualServers[socket.serverId].clients[data.attackerId].lineMultiplier = 1.75;
+            else if(badgePoints >= 6)
+                virtualServers[socket.serverId].clients[data.attackerId].lineMultiplier = 1.5;
+            else if(badgePoints >= 2)
+                virtualServers[socket.serverId].clients[data.attackerId].lineMultiplier = 1.25;
+        }
+        else if(data.attackerId != null)
+            console.log('\x1b[31m%s\x1b[0m', "[ERROR]","Attacker Not Found. ID: " + data.attackerId);
 
         var place = virtualServers[socket.serverId].place;
         socket.broadcast.to(socket.serverId).emit('KO', {id: socket.id, place: place});
@@ -105,8 +126,10 @@ function newConnetcion(socket){
 
     socket.on('lines', function(data)
     {
+        var lines = Math.round(virtualServers[socket.serverId].clients[socket.id].lineMultiplier * data.lines);
+
         data.players.forEach(player => {
-            io.to(player.id).emit('lines', {id: socket.id, column: data.column, lines: data.lines});
+            io.to(player.id).emit('lines', {id: socket.id, column: data.column, lines: lines, id: socket.id});
         });
 
     });
@@ -120,6 +143,13 @@ function newConnetcion(socket){
             if(virtualServers[socket.serverId].inLobby)
             {
                 updateLobby(virtualServers[socket.serverId]);
+            }
+            else{
+
+                //Just act like it was a KO
+                var place = virtualServers[socket.serverId].place;
+                socket.broadcast.to(socket.serverId).emit('KO', {id: socket.id, place: place});
+                virtualServers[socket.serverId].place--;
             }
         }    
     });
@@ -136,5 +166,14 @@ function NumClientsOnServer(vServer){
 var uniqueId = function() {
     return 'id-' + Math.random().toString(36).substr(2, 16);
 };
+
+process.on('uncaughtException', function(error) {
+
+    console.log("-------------------------- UNHANDELED REJECTION --------------------------------");
+    console.log(error);
+    console.log("--------------------------------------------------------------------------------");
+    //process.exit(1);
+});
+
 
 console.log("server started");

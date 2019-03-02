@@ -21,27 +21,31 @@ var numberOfRows = 20;
 var maxGarbageLines = 16;
 
 var place = 99;
+var badgePoints = 0;
 
 function setup(){
     socket = io.connect('http://' + $('#connectTo').val());
     //socket = io.connect('http://99.30.176.150:8080');
+    //socket = io.connect('http://localhost:8080');
     socket.on('updateLobby', updateLobby);
     socket.on('startGame', commenceGame);
     socket.on('gridUpdates', updateGrids);
     socket.on("attacking", setDefending);
     socket.on('lines', recieveLines);
     socket.on('KO', knockOut);
+    socket.on('badges', badges)
 
     joinLobby();
 }
 
 function commenceGame(data){
-
     clientId = socket.io.engine.id;
     var numberOfPlayers = data.players.length - 1;
     place = numberOfPlayers + 1;
     var playerIds = Object.values(data.players);
     
+    playerIds = shuffle(playerIds);
+
     for (let i = 0; i < playerIds.length; i++) {
         const playerId = playerIds[i];
 
@@ -74,7 +78,7 @@ function commenceGame(data){
             grid.columns.push(column);
         }
         
-        playerBoards[playerIds[i]] = {id: playerIds[i], grid: grid, column: columnNum, row: rowNum, side: side, alive: true};
+        playerBoards[playerIds[i]] = {id: playerIds[i], grid: grid, column: columnNum, row: rowNum, side: side, alive: true, badges: {}};
 
         columnNum++;
 
@@ -108,13 +112,21 @@ function knockOut(data){
     }
 
     playerBoards[data.id].alive = false;
-    playerBoards[data.id].place = data.place + 1;
+    playerBoards[data.id].place = data.place;
+}
+
+function badges(data){
+
+    if(data.playerId != clientId)
+        playerBoards[data.playerId].badges = data.badges;
+    else
+        badgePoints = data.badges;
 }
 
 function recieveLines(data){
     for (let i = 0; i < data.lines; i++) {
         if(garbageBarLines.length < maxGarbageLines)
-            garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor)});
+            garbageBarLines.push({time: 0, column: data.column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor), attackerId: data.id});
     }
 }
 
@@ -178,6 +190,25 @@ function updateLobby(playersInLobby){
             row++;
         }
     }
+}
+
+function shuffle(array) {
+    var currentIndex = array.length, temporaryValue, randomIndex;
+  
+    // While there remain elements to shuffle...
+    while (0 !== currentIndex) {
+  
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+  
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+  
+    return array;
 }
 
 // setup();

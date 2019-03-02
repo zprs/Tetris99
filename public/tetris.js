@@ -22,6 +22,7 @@ var numUpcomingPieces = 5;
 var holdPiece;
 var alreadySwitchedHold = false;
 
+var mute = true;
 var winNoise = new Audio('audio/royaleMusic.mp3');
 var pieceLandNoise = new Audio('audio/pieceLand.mp3')
 
@@ -34,7 +35,8 @@ var tColor = "#d07fff";
 var iColor = "#8cffe8";
 
 var playBackgroundColor = "#606566";
-
+var badgeIconColor = "#ffde4c";
+var incompleteBadgeIconColor = "#e0ba11";
 var defendingLineColor = "#fff959";
 
 var garbageBarLines = [];
@@ -128,7 +130,7 @@ $(document).on('keydown', function(e){
                 alreadySwitchedHold = true;
             }
             else{
-                holdPiece = getPiece(currentPiece.type, false);;
+                holdPiece = getPiece(currentPiece.type, false);
                 nextPiece(true);
                 alreadySwitchedHold = true;
             }
@@ -245,7 +247,7 @@ function animate(){
 
     if(gameOver)
     {
-        ctx.fillStyle = playBackgroundColor;;
+        ctx.fillStyle = playBackgroundColor;
         ctx.globalAlpha = .7;
         ctx.fillRect(playStartX, playStartY, playWidth, playHeight);
         ctx.globalAlpha = 1;
@@ -285,7 +287,7 @@ function animate(){
         drawAttackingUI();
     } 
 
-    drawPlace();
+    drawInfoPannel();
 }
 
 var boardsPadding = 5;
@@ -312,6 +314,8 @@ function getOtherPlayerBoardPos(board){
     return pos = {x: x, y: y};
 
 }
+
+var boardBadgeSize = 8;
 
 function drawOtherPlayerBoard(board)
 {
@@ -343,6 +347,27 @@ function drawOtherPlayerBoard(board)
 
             if(column[h] != null)
                 column[h].draw(pos.x + boardsBlockPadding, pos.y + boardsBlockPadding);
+        }
+    }
+
+    if(board.badges && board.badges > 0)
+    {
+        var fullBadges = 0;
+
+        if(board.badges >= 30)
+            fullBadges = 4;
+        else if(board.badges >= 14)
+            fullBadges = 3;
+        else if(board.badges >= 6)
+            fullBadges = 2;
+        else if(board.badges >= 2)
+            fullBadges = 1;
+
+        for (let i = 0; i < fullBadges; i++) {
+            
+            ctx.fillStyle = badgeIconColor;
+            ctx.fillRect(pos.x + (boardBadgeSize * 1.5) * i, pos.y, boardBadgeSize, boardBadgeSize);
+            ctx.fill();
         }
     }
 
@@ -448,7 +473,7 @@ function eliminateFullRows()
         var data = {
             players: attacking,
             column: Math.floor(Math.random() * 10),
-            lines: numberOfGarbageLines
+            lines: numberOfGarbageLines * 20
         }
 
         if(numberOfGarbageLines > 0)
@@ -457,8 +482,7 @@ function eliminateFullRows()
     }
 }
 
-function addGarbageLine(column){
-    
+function addGarbageLine(column, attackerId){
     var endGame = false;
 
     if(currentPiece && !currentPiece.canMove(0, 1))
@@ -476,7 +500,6 @@ function addGarbageLine(column){
                         isPartOfCurrentPiece = true;
                 });
             }
-            
 
             if(!isPartOfCurrentPiece)
             {                   
@@ -504,21 +527,32 @@ function addGarbageLine(column){
     }
     
     if(endGame)
-        stopGame(false);
+        stopGame(false, attackerId);
 }
 
-function stopGame(win){
+function stopGame(win, attackerId){
+
+    if(gameOver == true)
+        return;
+
     won = win;
 
-    if(win)
+    if(win && !mute)
         winNoise.play();
 
     attacking.forEach(attack => {
         attack["add"] = false;
     });
 
+    
     socket.emit("attacking", attacking);
-    socket.emit('KO');
+
+    if(!win)
+    {
+        socket.emit('KO', {attackerId: attackerId});
+        badgePoints = 0;
+    }
+
     gameOver = true;
 }
 
@@ -530,7 +564,7 @@ function updateGarbageBar(){
         if(garbageBarLine.time < garbageBarLineTime)
             garbageBarLine.time++;
         else{
-            addGarbageLine(garbageBarLine.column);
+            addGarbageLine(garbageBarLine.column, garbageBarLine.attackerId);
             garbageBarLines.splice(i, 1);
             garbageBarLines.forEach(line => {
                 line.block.row++;
@@ -556,13 +590,6 @@ function drawGarbageBar(){
 
         block.draw(x + blockPadding, y + blockPadding);
     }
-}
-
-function drawPlace(){
-    ctx.font = playWidth / 12 + "px Arial";
-    ctx.textAlign = "left";
-    ctx.fillStyle = "white";
-    ctx.fillText(place + "/99", playStartX + playWidth + blockPadding, playStartY + (blockSize + blockPadding) * numUpcomingPieces * 3 + blockPadding + blockSize * 1.5);
 }
 
 function drawNextPieces(){
@@ -628,6 +655,91 @@ function drawGrid(){
     }
 }
 
+var badgeSize = 30;
+
+function drawInfoPannel(){
+
+    var y = (blockSize + blockPadding) * numUpcomingPieces * 3 + blockPadding * 2 + playStartY;
+    var x = playStartX + playWidth + blockPadding;
+
+    var height = (playHeight - (y - playStartY));
+    var width = (blockSize + blockPadding) * 4 + blockPadding * 5;
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#606566";
+    ctx.fillRect(x, y, width, height);
+
+    ctx.font = playWidth / 12 + "px Arial";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "white";
+    ctx.fillText(place + "/99", x + blockPadding, y + blockPadding + blockSize);
+
+    var badgePosX = x + boardsPadding * 5;
+    var badgePosY = y + boardsPadding * 10;
+
+    var fullBadges = 0;
+    var totalToNextBadge = 0;
+
+    var badgesLeft = badgePoints;
+
+    if(badgePoints >= 30)
+        fullBadges = 4;
+    else if(badgePoints >= 14)
+    {
+        fullBadges = 3;
+        totalToNextBadge = 30;
+        badgesLeft -= 14; 
+    }
+    else if(badgePoints >= 6)
+    {
+        fullBadges = 2;
+        totalToNextBadge = 14;
+        badgesLeft -= 6;
+    }
+    else if(badgePoints >= 2)
+    {
+        fullBadges = 1;
+        totalToNextBadge = 6;
+        badgesLeft -= 2;
+    }
+    else 
+    {
+        fullBadges = 0;
+        totalToNextBadge = 2;
+    }
+        
+    var numberOfBadgesToDraw = fullBadges;
+    var percentExtra = badgesLeft / totalToNextBadge
+
+    if(percentExtra > 0)
+        numberOfBadgesToDraw++;
+        
+    for (let i = 0; i < numberOfBadgesToDraw; i++) {
+
+        var height = badgeSize;
+
+        ctx.fillStyle = badgeIconColor;
+
+        if(i + 1 > fullBadges)
+        {
+            height *= percentExtra;
+            badgePosY = badgePosY + badgeSize - height;
+            ctx.fillStyle = incompleteBadgeIconColor;
+        }
+        
+        ctx.fillRect(badgePosX, badgePosY, badgeSize, height);
+        ctx.fill();
+
+        if(i == 0 || i == 2)
+            badgePosX += badgeSize * 1.5;
+        else if(i == 1)
+        {
+            badgePosX -= badgeSize * 1.5;
+            badgePosY += badgeSize * 1.5;
+        }
+    }
+}
+
 function drawAttackMode(){
     var width = playWidth / 3;
     var height = width / 4;
@@ -673,25 +785,25 @@ function drawAttackMode(){
         ctx.globalAlpha = .5;
         roundRect(ctx, x - width / 2, y - height / 2 - padding, width, height, curveRadius, koColor);
         ctx.globalAlpha = 1;
-        ctx.fillColor = "white";
+        ctx.fillStyle = "white";
         ctx.fillText("K.O's", x, y - height / 2 + textY, width);
     // Random
         ctx.globalAlpha = .5;
         roundRect(ctx, x - width - padding, y, width, height, curveRadius, randColor);
         ctx.globalAlpha = 1;
-        ctx.fillColor = "white";
+        ctx.fillStyle = "white";
         ctx.fillText("Random", x - width / 2 - padding, y + padding + textY, width);
     // Badges
         ctx.globalAlpha = .5;
         roundRect(ctx, x + padding, y, width, height, curveRadius, badgeColor);
         ctx.globalAlpha = 1;
-        ctx.fillColor = "white";
+        ctx.fillStyle = "white";
         ctx.fillText("Badges", x + padding + width / 2, y + padding + textY, width);
     // Attackers
         ctx.globalAlpha = .5;
         roundRect(ctx, x - width / 2, y + padding + height / 2, width, height, curveRadius, attackColor);
         ctx.globalAlpha = 1;
-        ctx.fillColor = "white";
+        ctx.fillStyle = "white";
         ctx.fillText("Attackers", x, y + padding * 2 + height / 2 + textY, width);
 
     ctx.globalAlpha = 1;
@@ -733,8 +845,9 @@ function updateAttackMode()
                         }
                     }
                 }
-            
-                closestToDeath.push({id: board.id, count: count})
+
+                if(board.alive)
+                    closestToDeath.push({id: board.id, count: count})
             });
 
             closestToDeath.sort(function (player1, player2) {
@@ -755,7 +868,8 @@ function updateAttackMode()
             var players = [];
 
             boards.forEach(board => {
-                players.push({id: board.id, count: Math.random()});
+                if(board.alive)
+                    players.push({id: board.id, count: Math.random()});
             });
 
             players.sort(function (player1, player2) {
@@ -766,26 +880,23 @@ function updateAttackMode()
             attacking = players.slice(0, numRadnTargets);
         break;
         case 2: // Badges
-
             lastAttackMode = attackMode;
 
-            return;
+            var players = Object.values(playerBoards);
 
-            // var players = playerBoards.values;
+            for (let i = players.length - 1; i >= 0; i--) {
+                const player = players[i];
 
-            // for (let i = players.length - 1; i >= 0; i--) {
-            //     const player = players[i];
+                if(!player.alive)
+                    players.splice(i, 1);
+            }
 
-            //     if(!player.alive)
-            //         players.splice(i, 1);
-            // }
+            players.sort(function (player1, player2) {
+                if (player1.badges > player2.badges) return -1;
+                if (player1.badges < player2.badges) return 1;
+            });
 
-            // players.sort(function (player1, player2) {
-            //     if (player1.badges > player2.badges) return -1;
-            //     if (player1.badges < player2.badges) return 1;
-            // });
-
-            // attacking = players.slice(0, numBadgesTargets);
+            attacking = players.slice(0, numBadgesTargets);
         break;
         case 3: // Attackers
 
@@ -901,13 +1012,11 @@ function polygon(ctx, x, y, radius, sides, startAngle, anticlockwise) {
     ctx.rotate(startAngle);
     ctx.moveTo(radius,0);
     for (var i = 1; i < sides; i++) {
-      ctx.lineTo(radius*Math.cos(a*i),radius*Math.sin(a*i));
+        ctx.lineTo(radius*Math.cos(a*i),radius*Math.sin(a*i));
     }
     ctx.closePath();
     ctx.restore();
-  }
-
-
+}
 
 function Block(column, row, color) {
     this.column = column;
@@ -1098,7 +1207,7 @@ function newNextPiece(){
 
 function nextPiece(dontPlayNoise){
 
-    if(!dontPlayNoise)
+    if(!dontPlayNoise && !mute)
     {
         pieceLandNoise.pause();
         pieceLandNoise.currentTime = 0;
@@ -1144,7 +1253,7 @@ function nextPiece(dontPlayNoise){
 
         if(grid.columns[block.column][block.row] != null)
         {
-            stopGame(false);
+            stopGame(false, null);
             return;
         }
     }
