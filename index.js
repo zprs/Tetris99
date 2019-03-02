@@ -90,7 +90,7 @@ function newConnetcion(socket){
             
         if(virtualServers[socket.serverId].clients[data.attackerId])
         {
-            virtualServers[socket.serverId].clients[data.attackerId].badgePoints += virtualServers[socket.serverId].clients[socket.id].badgePoints;
+            virtualServers[socket.serverId].clients[data.attackerId].badgePoints += virtualServers[socket.serverId].clients[socket.id].badgePoints + 1;
             var badgePoints = virtualServers[socket.serverId].clients[data.attackerId].badgePoints;
 
             socket.broadcast.to(socket.serverId).emit("badges", {playerId: data.attackerId, badges: badgePoints});
@@ -108,6 +108,7 @@ function newConnetcion(socket){
             console.log('\x1b[31m%s\x1b[0m', "[ERROR]","Attacker Not Found. ID: " + data.attackerId);
 
         var place = virtualServers[socket.serverId].place;
+        io.to(data.attackerId).emit('addKO');
         socket.broadcast.to(socket.serverId).emit('KO', {id: socket.id, place: place});
         virtualServers[socket.serverId].place--;
     });
@@ -126,6 +127,13 @@ function newConnetcion(socket){
 
     socket.on('lines', function(data)
     {
+
+        if(!virtualServers[socket.serverId])
+        {
+            console.log('\x1b[31m%s\x1b[0m', "[ERROR]","Server with id: " + socket.serverId + " Not Found");
+            return;
+        }
+        
         var lines = Math.round(virtualServers[socket.serverId].clients[socket.id].lineMultiplier * data.lines);
 
         data.players.forEach(player => {

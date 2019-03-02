@@ -23,10 +23,12 @@ var maxGarbageLines = 16;
 var place = 99;
 var badgePoints = 0;
 
+var numberOfKOs = 0;
+
 function setup(){
-    socket = io.connect('http://' + $('#connectTo').val());
+    //socket = io.connect('http://' + $('#connectTo').val());
     //socket = io.connect('http://99.30.176.150:8080');
-    //socket = io.connect('http://localhost:8080');
+    socket = io.connect('http://localhost:8080');
     socket.on('updateLobby', updateLobby);
     socket.on('startGame', commenceGame);
     socket.on('gridUpdates', updateGrids);
@@ -34,6 +36,7 @@ function setup(){
     socket.on('lines', recieveLines);
     socket.on('KO', knockOut);
     socket.on('badges', badges)
+    socket.on('addKO', addKO);
 
     joinLobby();
 }
@@ -114,6 +117,11 @@ function knockOut(data){
     playerBoards[data.id].alive = false;
     playerBoards[data.id].place = data.place;
 }
+
+function addKO()
+{
+    numberOfKOs++;
+}   
 
 function badges(data){
 

@@ -673,9 +673,10 @@ function drawInfoPannel(){
     ctx.textAlign = "left";
     ctx.fillStyle = "white";
     ctx.fillText(place + "/99", x + blockPadding, y + blockPadding + blockSize);
+    ctx.fillText("K.O.   " + numberOfKOs, x + blockPadding, y + blockPadding * 2 + blockSize * 2);
 
     var badgePosX = x + boardsPadding * 5;
-    var badgePosY = y + boardsPadding * 10;
+    var badgePosY = y + boardsPadding * 15;
 
     var fullBadges = 0;
     var totalToNextBadge = 0;
