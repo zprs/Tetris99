@@ -34,15 +34,18 @@ var zColor = "#ff6666";
 var tColor = "#d07fff";
 var iColor = "#8cffe8";
 
+var playBackgroundAlpha = .5;
 var playBackgroundColor = "#606566";
 var badgeIconColor = "#ffde4c";
 var incompleteBadgeIconColor = "#e0ba11";
-var defendingLineColor = "#fff959";
+var defendingLineColor = "white";//"#fff959";
 
 var garbageBarLines = [];
 var garbageBlockColor1 = "#ffd866";
 var garbageBlockColor2 = "#ff59a9";
 var garbageBlockColor = "#939393";
+
+var attackModeHighlightColor = "white";
 
 garbageBarLineTime = 1000;
 
@@ -163,7 +166,7 @@ function startGame(){
     gameStarted = true;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.style.background = "#a3e0ff";
+    //canvas.style.background = "#a3e0ff";
 
     for (let i = 0; i < numberOfColumns; i++) {
         
@@ -247,8 +250,8 @@ function animate(){
 
     if(gameOver)
     {
+        ctx.globalAlpha = playBackgroundAlpha;
         ctx.fillStyle = playBackgroundColor;
-        ctx.globalAlpha = .7;
         ctx.fillRect(playStartX, playStartY, playWidth, playHeight);
         ctx.globalAlpha = 1;
 
@@ -577,8 +580,10 @@ function drawGarbageBar(){
     var x = playStartX - blockSize - blockPadding * 3;
     var y = playStartY + blockSize * 4 + blockPadding * 4;
 
-    ctx.fillStyle = "#606566";
+    ctx.fillStyle = playBackgroundColor;
+    ctx.globalAlpha = playBackgroundAlpha;
     ctx.fillRect(x, y, blockSize + blockPadding * 2, blockSize * 16 + blockPadding * 17);
+    ctx.globalAlpha = 1;
 
     for (let i = 0; i < garbageBarLines.length; i++) {
         var block = garbageBarLines[i].block;
@@ -599,8 +604,10 @@ function drawNextPieces(){
     var width = (blockSize + blockPadding) * 4 + blockPadding * 5;
     var height = (blockSize + blockPadding) * numUpcomingPieces * 3 + blockPadding;
 
-    ctx.fillStyle = "#606566";
+    ctx.fillStyle = playBackgroundColor;
+    ctx.globalAlpha = playBackgroundAlpha;
     ctx.fillRect(x, y, width, height);
+    ctx.globalAlpha = 1;
 
     y += blockSize;
     
@@ -624,8 +631,10 @@ function drawHold(){
     var x = playStartX - blockPadding - holdWidth;
     var y = playStartY;
 
-    ctx.fillStyle = "#606566";
+    ctx.fillStyle = playBackgroundColor;
+    ctx.globalAlpha = playBackgroundAlpha;
     ctx.fillRect(x, y, holdWidth, holdHeight);
+    ctx.globalAlpha = 1;
 
     if(holdPiece != null)
     {
@@ -641,7 +650,9 @@ function drawHold(){
 
 function drawGrid(){
     ctx.fillStyle = playBackgroundColor;
+    ctx.globalAlpha = playBackgroundAlpha;
     ctx.fillRect(playStartX, playStartY, playWidth, playHeight);
+    ctx.globalAlpha = 1;
 
     for (let i = 0; i < grid.columns.length; i++) {
         
@@ -665,10 +676,11 @@ function drawInfoPannel(){
     var height = (playHeight - (y - playStartY));
     var width = (blockSize + blockPadding) * 4 + blockPadding * 5;
 
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = "#606566";
+    ctx.globalAlpha = playBackgroundAlpha;
+    ctx.fillStyle = playBackgroundColor;
     ctx.fillRect(x, y, width, height);
-
+    ctx.globalAlpha = 1;
+    
     ctx.font = playWidth / 12 + "px Arial";
     ctx.textAlign = "left";
     ctx.fillStyle = "white";
@@ -757,7 +769,7 @@ function drawAttackMode(){
     var textY = playWidth / -90;
 
     var backgroundColor = "#b2b2b2";
-    var highlightColor = defendingLineColor;
+    var highlightColor = attackModeHighlightColor;
 
     var koColor = backgroundColor;
     var randColor = backgroundColor;
@@ -1029,7 +1041,8 @@ function Block(column, row, color) {
     this.padding = blockPadding;
 
     this.draw = function(x, y){
-        roundRect(ctx, this.column * (this.size + this.padding) + x, this.row * (this.size + this.padding) + y, this.size, this.size, this.radius, this.color);
+        ctx.lineWidth = 3;
+        roundRect(ctx, this.column * (this.size + this.padding) + x, this.row * (this.size + this.padding) + y, this.size, this.size, this.radius, this.color, shadeColorHex(this.color, 25));
     }
 
     this.checkForBlocksDown = function(y, ignore){ //true => there is a collision
@@ -1437,6 +1450,11 @@ function Piece(blocks, pivot, type)
         }
     }
 
+}
+
+function shadeColorHex(color, percent) {
+    var num = parseInt(color.slice(1),16), amt = Math.round(2.55 * percent), R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
 }
 
 function roundRect(ctx, x, y, width, height, radius, fillColor, strokeColor) {

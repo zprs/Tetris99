@@ -1,13 +1,58 @@
+body{
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
 #joinLobby{
     z-index: 10;
 }
+
+#farBackground{
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top:0;
+    position: absolute;
+    z-index: -3;
+    background-color: black;
+}
+#background{
+    width: 100%;
+    height: 100%;
+
+    background-image: linear-gradient(270deg, #0fee8d, #2772c7, #6e42f4, #ce54ff, #ff6040 );
+    background-size: 1000% 1000%;
+
+    -webkit-animation: gradient 30s ease infinite;
+    -moz-animation: gradient 30s ease infinite;
+    animation: gradient 30s ease infinite;
+
+    left: 0;
+    top:0;
+    position: absolute;
+    z-index: -2;
+}
+
 #mainCanvas{
+
+    width: 100%;
+    height: 100%;
+
     left: 0;
     top:0;
     position: absolute;
     z-index: -1;
 }
 
+
+#header{
+    color: white;
+    font-size: 8vh;
+    font-family: 'Rubik', sans-serif;
+    text-align: center;
+    width: 100%;
+    margin-top: 30vh;
+}
 #victoryRoyale{
     visibility: hidden;
     position:absolute;
@@ -18,4 +63,67 @@
     margin:auto;
 
     height: 5vw;
+}
+
+@-webkit-keyframes gradient {
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+}
+@-moz-keyframes gradient {
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+}
+@keyframes gradient { 
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+}
+
+button {
+    color: white;
+    font-family: 'Rubik', sans-serif;
+    vertical-align: center;
+    font-size: 2vh;
+
+    width: 20vh;
+    height: 5vh;
+    display: inline-block;
+    margin-top: 5%;
+
+    margin-left: calc(50% - 10vh);
+
+    border: .5vh solid white;
+    border-radius: 1vh;
+    background-color: rgb(255, 255, 255, 0);
+    transition: 0.2s;
+}
+
+button:hover{
+    color: #ffffff;
+    border-radius: 1.5vh;
+    border: .75vh solid #ffffff;
+
+}
+
+button:disabled{
+    color: #ffffffb7;
+    border: .5vh solid #ffffffb7;
+
+}
+
+#voteStart{
+    position: absolute;
+    margin-top: 13vh;
+}
+
+#togglePaint{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    background-image: url("images/paintBrush.png");
+    width: 6vh;
+    height: 6vh;
+    margin: 1vh;
 }

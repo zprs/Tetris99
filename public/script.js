@@ -25,6 +25,18 @@ var badgePoints = 0;
 
 var numberOfKOs = 0;
 
+var votesToStart = 0;
+
+window.addEventListener('resize', function(event){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    if(!gameStarted)
+        updateLobby(lobbyPlayers);
+
+});
+
+
 function setup(){
     //socket = io.connect('http://' + $('#connectTo').val());
     //socket = io.connect('http://99.30.176.150:8080');
@@ -37,11 +49,16 @@ function setup(){
     socket.on('KO', knockOut);
     socket.on('badges', badges)
     socket.on('addKO', addKO);
+    socket.on('voteStart', updateVotes);
 
+    $("#header").hide();
     joinLobby();
 }
 
 function commenceGame(data){
+
+    $("#voteStart").hide();
+
     clientId = socket.io.engine.id;
     var numberOfPlayers = data.players.length - 1;
     place = numberOfPlayers + 1;
@@ -93,6 +110,18 @@ function commenceGame(data){
     }
 
     startGame();
+}
+
+function voteStart(){
+    if(!gameStarted)
+        socket.emit('voteStart', true);
+
+    $("#voteStart").attr("disabled", "disabled");
+}
+
+function updateVotes(data){
+    votesToStart = data;
+    updateLobby(lobbyPlayers);
 }
 
 function joinLobby(){
@@ -153,41 +182,54 @@ function updateGrids(data){
     }
 }
 
+var lobbyPlayers = 0;
+
 function updateLobby(playersInLobby){
+
+    lobbyPlayers = playersInLobby;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    var lobbyX = canvas.width / 45;
-    var lobbyY = canvas.width / 45;
-
-    var padding = canvas.width / 80;
-    var lobbyClientSize = canvas.width / 100;
+    var padding = canvas.height / 50;
+    var lobbyClientSize =canvas.height / 50;
     var playersPerRow = 8;
 
     var lobbySize = (lobbyClientSize + padding) * playersPerRow + padding;
+
+    var lobbyX = canvas.width / 2 - lobbySize / 2;
+    var lobbyY = canvas.height / 2 - lobbySize / 1.2;
     
     //Draw Lobby
     ctx.strokeStyle = "#429df7";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(lobbyX,lobbyY, lobbySize, lobbySize);
+    ctx.lineWidth = 5;
+    roundRect(ctx, lobbyX,lobbyY, lobbySize, lobbySize, 10, null, "white");
 
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "black";
+    ctx.font = (canvas.height / 30) + "px Rubik";
+    ctx.fillStyle = "white";
     ctx.fillText("number of players: " + playersInLobby, lobbyX, lobbyY + lobbySize + padding * 2);
-    ctx.font = "15px Arial";
-    ctx.fillText("game will start at 99", lobbyX, lobbyY + lobbySize + padding * 4);
+    ctx.font = (canvas.height / 50) + "px Rubik";
+
+    ctx.globalAlpha = .6;
+    ctx.fillText("game will start with 99", lobbyX, lobbyY + lobbySize + padding * 4);
+    ctx.fillText("votes for early start: " + votesToStart, lobbyX, lobbyY + lobbySize + padding * 6);
+
+    var votesNeeded = playersInLobby;
+
+    if(votesNeeded == 1)
+        votesNeeded++;
+        
+    ctx.fillText("votes needed: " + votesNeeded, lobbyX, lobbyY + lobbySize + padding * 8);
+
+    ctx.globalAlpha = 1;
 
     var clientX = 0;
     var clientY = 0;
     var row = 1;
 
     for (let i = 0; i < playersInLobby; i++) {
-
-
-        ctx.fillStyle = "#429df7";
-        ctx.strokeStyle = "#429df7";;
+        ctx.fillStyle = "white";
         ctx.lineWidth = 2;
-        ctx.fillRect(padding + lobbyX + clientX, padding + lobbyY + clientY, lobbyClientSize, lobbyClientSize);
+        roundRect(ctx, padding + lobbyX + clientX, padding + lobbyY + clientY, lobbyClientSize, lobbyClientSize, 4, "white");
         
         clientX += padding + lobbyClientSize;
 
@@ -199,6 +241,20 @@ function updateLobby(playersInLobby){
         }
     }
 }
+
+var backgroundToggle = true;
+
+function togglePaint(){
+
+    backgroundToggle = !backgroundToggle;
+
+    if(backgroundToggle)
+        $("#background").show();
+    else
+        $("#background").hide();
+
+}
+
 
 function shuffle(array) {
     var currentIndex = array.length, temporaryValue, randomIndex;
@@ -219,4 +275,4 @@ function shuffle(array) {
     return array;
 }
 
-// setup();
+//setup();

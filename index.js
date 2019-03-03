@@ -8,11 +8,11 @@ app.use(express.static('public'));
 var io = require('socket.io').listen(server);
 
 var virtualServers = {};
-var numberOfClientsPerServer = 3;
+var numberOfClientsPerServer = 99;
 
 function AddServer(){
     var id = uniqueId();
-    virtualServers[id] = {id: id, clients: {}, inLobby: true};
+    virtualServers[id] = {id: id, clients: {}, inLobby: true, votesToStart: 0};
     var newServer = virtualServers[id];
     console.log("Room #" + ObjectSize(virtualServers) + 1 + " created with id: " + id);
     return newServer;
@@ -29,11 +29,15 @@ function addClientToServer(vServer, socket){
     if(ObjectSize(vServer.clients) == numberOfClientsPerServer)
     {
         vServer.inLobby = false;
-    
-        var clients = Object.keys(virtualServers[vServer.id].clients);
-        virtualServers[vServer.id].place = clients.length;
-        io.to(vServer.id).emit('startGame', {players: clients});
+        startServerGame(vServer.id);
     }
+}
+
+function startServerGame(serverid)
+{
+    var clients = Object.keys(virtualServers[serverid].clients);
+    virtualServers[serverid].place = clients.length;
+    io.to(serverid).emit('startGame', {players: clients});
 }
 
 function updateLobby(vServer){
@@ -125,6 +129,21 @@ function newConnetcion(socket){
         socket.broadcast.to(socket.serverId).emit('gridUpdates', data);
     });
 
+    socket.on('voteStart', function()
+    {
+        if(!socket.voted)
+        {
+            virtualServers[socket.serverId].votesToStart++;
+            io.to(socket.serverId).emit('voteStart', virtualServers[socket.serverId].votesToStart);
+            socket.voted = true;
+
+            var numberOfPlayers = Object.values(virtualServers[socket.serverId].clients).length;
+
+            if(numberOfPlayers > 1 && virtualServers[socket.serverId].votesToStart >= numberOfPlayers)
+                startServerGame(socket.serverId);
+        }
+    });
+
     socket.on('lines', function(data)
     {
 
@@ -151,6 +170,12 @@ function newConnetcion(socket){
             if(virtualServers[socket.serverId].inLobby)
             {
                 updateLobby(virtualServers[socket.serverId]);
+
+                if(socket.voted)
+                {
+                    virtualServers[socket.serverId].votesToStart--;
+                    socket.broadcast.to(socket.serverId).emit('voteStart', virtualServers[socket.serverId].votesToStart);
+                }
             }
             else{
 

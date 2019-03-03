@@ -5,6 +5,7 @@
         <meta name="author" content="Zachary Richards">
 
         <link rel="stylesheet" type="text/css" href="stylesheet.css">
+        <link href="https://fonts.googleapis.com/css?family=Rubik" rel="stylesheet">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
         
@@ -18,8 +19,18 @@
     
     
     <body>
+        <h1 id="header">Tetris 69</h1>
+        <div id="farBackground"></div>
+        <div id="background"></div>
         <button id="joinLobby" onclick="setup()" type="button">Join Lobby</button>
-        <input id="connectTo" type="text" value="99.30.176.150:8080">
+        <button id="voteStart" onclick="voteStart()" type="button">Vote To Start</button>
+        <button id="togglePaint" onclick="togglePaint()">BG</button>
+
+
+
+        
+        <button id="voteStart" onclick="voteStart()" type="button" style="visibility: hidden">Vote to Start</button>
+        <input id="connectTo" type="text" value="99.30.176.150:8080" style="visibility: hidden">
         <canvas id="mainCanvas"></canvas>
         <img id="victoryRoyale" src="images/1-victory-royale.png" alt="#1 Victory Royale">
     </body>
