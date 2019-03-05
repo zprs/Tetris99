@@ -22,7 +22,7 @@ var numUpcomingPieces = 5;
 var holdPiece;
 var alreadySwitchedHold = false;
 
-var mute = true;
+var mute = false;
 var winNoise = new Audio('audio/royaleMusic.mp3');
 var pieceLandNoise = new Audio('audio/pieceLand.mp3')
 
@@ -68,10 +68,6 @@ var verticalTimer = 0;
 var left = false;
 var right = false;
 var down = false;
-
-var gameStarted = false;
-var gameOver = false;
-var won = false;
 
 var playHeight = (blockSize + blockPadding) * numberOfRows + blockPadding;
 var playWidth = (blockSize + blockPadding) * numberOfColumns + blockPadding;
@@ -262,9 +258,9 @@ function animate(){
 
         if(!won)
         {
-            ctx.font = "bold " + playWidth / 7.5+ "px Arial";
+            ctx.font = "bold " + playWidth / 7.5+ "px Rubik";
             ctx.fillText(endText, playStartX + playWidth / 2, playStartY + playHeight / 2, playWidth);
-            ctx.font = "bold " + playWidth / 10 + "px Arial";
+            ctx.font = "bold " + playWidth / 10 + "px Rubik";
 
             ctx.fillStyle = "white";
             ctx.fillText("PLACE: " + place, playStartX + playWidth / 2, playStartY + playHeight / 2 + playWidth / 6, playWidth);
@@ -327,11 +323,11 @@ function drawOtherPlayerBoard(board)
     if(!board.alive)
     {
         ctx.globalAlpha = 1;
-        ctx.font = "bold " + boardsWidth / 2 + "px Arial";
+        ctx.font = "bold " + boardsWidth / 2 + "px Rubik";
         ctx.textAlign = "center";
         ctx.fillStyle = "white";
         ctx.fillText("K.O.", pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth);
-        ctx.font = boardsWidth / 3 + "px Arial";
+        ctx.font = boardsWidth / 3 + "px Rubik";
         ctx.fillText(board.place, pos.x + boardsWidth / 2, pos.y + boardsHeight / 1.5, boardsWidth);
 
         return;
@@ -441,7 +437,6 @@ function eliminateFullRows()
             if(garbageBarLines.length > 0)
             {
                 garbageBarLines.shift();
-
                 garbageBarLines.forEach(line => {
                     line.block.row++;
                 });
@@ -464,8 +459,6 @@ function eliminateFullRows()
 
         var numberOfGarbageLines = 0;
 
-        // if(rowsDeleted.length == 1)
-        //     numberOfGarbageLines = 5;
         if(rowsDeleted.length == 2)
             numberOfGarbageLines = 1;
         else if(rowsDeleted.length == 3)
@@ -476,7 +469,7 @@ function eliminateFullRows()
         var data = {
             players: attacking,
             column: Math.floor(Math.random() * 10),
-            lines: numberOfGarbageLines * 20
+            lines: numberOfGarbageLines
         }
 
         if(numberOfGarbageLines > 0)
@@ -681,7 +674,7 @@ function drawInfoPannel(){
     ctx.fillRect(x, y, width, height);
     ctx.globalAlpha = 1;
     
-    ctx.font = playWidth / 12 + "px Arial";
+    ctx.font = playWidth / 12 + "px Rubik";
     ctx.textAlign = "left";
     ctx.fillStyle = "white";
     ctx.fillText(place + "/99", x + blockPadding, y + blockPadding + blockSize);
@@ -792,7 +785,7 @@ function drawAttackMode(){
         break;
     }
 
-    ctx.font = playWidth / 18 + "px Arial";
+    ctx.font = playWidth / 18 + "px Rubik";
 
     // KO's
         ctx.globalAlpha = .5;
@@ -955,6 +948,7 @@ function updateAttackMode()
 
 function drawDefendingUI(){
     defending.forEach(defend => {
+        ctx.globalAlpha = .2;
         ctx.strokeStyle = defendingLineColor;
         ctx.beginPath();
         ctx.moveTo(playStartX + playWidth / 2, playStartY + playHeight);
@@ -967,6 +961,7 @@ function drawDefendingUI(){
 
         ctx.lineTo(pos.x + boardsWidth / 2, pos.y + boardsHeight / 2);
         ctx.stroke();
+        ctx.globalAlpha = 1;
     });
 }
 
@@ -976,44 +971,50 @@ function drawAttackingUI(){
         var board = playerBoards[attack.id];
         var pos = getOtherPlayerBoardPos(board);
 
-        ctx.globalAlpha = .3;
+        var padding = boardsWidth / 5;
 
-        ctx.beginPath();
-        ctx.strokeStyle = "#63ffdd";
-        ctx.lineWidth = 3;
-        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth * 3/4, 6, 0, false);
-        ctx.stroke();
-
-        ctx.globalAlpha = 1;
-
-        ctx.lineWidth = 5;
-
-        ctx.beginPath();
-        ctx.strokeStyle = "#8cf3ff";
-        ctx.fillStyle = "#38bc9f";
-        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2, 6, 0, false);
-        ctx.stroke();
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.strokeStyle = "#8cf3ff";
-        ctx.fillStyle = "#51e2c3";
-        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2 - 6, 6, 0, false);
-        ctx.stroke();
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.strokeStyle = "#8cf3ff";
-        ctx.fillStyle = "#51e2c3";
-        polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2 - 20, 6, 0, false);
-        ctx.stroke();
-        ctx.fill();
-
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = 1;
+        roundRect(ctx, pos.x - padding / 2, pos.y - padding / 2, boardsWidth + padding, boardsHeight + padding, padding, null, "white");
     });
 
     
+}
+
+function drawHexThing (board, pos) {
+    ctx.globalAlpha = .3;
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#63ffdd";
+    ctx.lineWidth = 3;
+    polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth * 3/4, 6, 0, false);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+
+    ctx.lineWidth = 5;
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#8cf3ff";
+    ctx.fillStyle = "#38bc9f";
+    polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2, 6, 0, false);
+    ctx.stroke();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#8cf3ff";
+    ctx.fillStyle = "#51e2c3";
+    polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2 - 6, 6, 0, false);
+    ctx.stroke();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.strokeStyle = "#8cf3ff";
+    ctx.fillStyle = "#51e2c3";
+    polygon(ctx, pos.x + boardsWidth / 2, pos.y + boardsHeight / 2, boardsWidth / 2 - 20, 6, 0, false);
+    ctx.stroke();
+    ctx.fill();
+
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 1;
 }
 
 function polygon(ctx, x, y, radius, sides, startAngle, anticlockwise) {
@@ -1042,7 +1043,7 @@ function Block(column, row, color) {
 
     this.draw = function(x, y){
         ctx.lineWidth = 3;
-        roundRect(ctx, this.column * (this.size + this.padding) + x, this.row * (this.size + this.padding) + y, this.size, this.size, this.radius, this.color, shadeColorHex(this.color, 25));
+        roundRect(ctx, this.column * (this.size + this.padding) + x, this.row * (this.size + this.padding) + y, this.size, this.size, this.radius, this.color);//, shadeColorHex(this.color, 25));
     }
 
     this.checkForBlocksDown = function(y, ignore){ //true => there is a collision

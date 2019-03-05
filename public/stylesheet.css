@@ -53,16 +53,16 @@ body{
     width: 100%;
     margin-top: 30vh;
 }
-#victoryRoyale{
+#victory{
     visibility: hidden;
     position:absolute;
-    top: 30%;
+    top: 40%;
     left:0;
     right:0;
     bottom: 70%;
     margin:auto;
 
-    height: 5vw;
+    height: 7vw;
 }
 
 @-webkit-keyframes gradient {
@@ -122,7 +122,6 @@ button:disabled{
     position: fixed;
     bottom: 0;
     left: 0;
-    background-image: url("images/paintBrush.png");
     width: 6vh;
     height: 6vh;
     margin: 1vh;

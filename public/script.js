@@ -26,14 +26,21 @@ var badgePoints = 0;
 var numberOfKOs = 0;
 
 var votesToStart = 0;
+var inLobby = false;
+
+var gameStarted = false;
+var gameOver = false;
+var won = false;
 
 window.addEventListener('resize', function(event){
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    if(!gameStarted)
-        updateLobby(lobbyPlayers);
+    playStartX = canvas.width / 2 - playWidth / 2;
+    playStartY = canvas.height / 2 - playHeight / 2;
 
+    if(!gameStarted && inLobby)
+        updateLobby(lobbyPlayers);
 });
 
 
@@ -50,12 +57,48 @@ function setup(){
     socket.on('badges', badges)
     socket.on('addKO', addKO);
     socket.on('voteStart', updateVotes);
-
     $("#header").hide();
     joinLobby();
 }
 
+var idleTime = 0;
+$(document).ready(function () {
+
+    //Increment the idle time counter every minute.
+    var idleInterval = setInterval(timerIncrement, 3000); // 3 seconds
+
+    //Zero the idle timer on mouse movement.
+    $(this).mousemove(function (e) {
+        idleTime = 0;
+    });
+    $(this).keypress(function (e) {
+        idleTime = 0;
+    });
+});
+
+function timerIncrement() {
+
+    if(!gameStarted)
+        return;
+
+    idleTime++;
+
+    if (idleTime > 10) { // 30 seconds
+        alert("Idle too long :(");
+        window.location.reload();
+
+        // var column = Math.floor(Math.random() * 11);
+        
+        // for (let i = 0; i < 8; i++) {
+        //     if(garbageBarLines.length < maxGarbageLines)
+        //         garbageBarLines.push({time: 0, column: column, block: new Block(0, 15 - garbageBarLines.length, garbageBlockColor), attackerId: null});
+        // }
+    }
+}
+
 function commenceGame(data){
+
+    inLobby = false;
 
     $("#voteStart").hide();
 
@@ -128,6 +171,8 @@ function joinLobby(){
     $("#connectTo").hide();
     $('#joinLobby').hide();
     socket.emit('joinLobby');
+
+    inLobby = true;
 }
 
 function knockOut(data){
@@ -139,7 +184,7 @@ function knockOut(data){
         if(place == 1)
         {
             stopGame(true);
-            $('#victoryRoyale').css('visibility', 'visible');
+            $('#victory').css('visibility', 'visible');
         }
     }
 

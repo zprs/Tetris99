@@ -27,14 +27,12 @@ function addClientToServer(vServer, socket){
     updateLobby(vServer);
 
     if(ObjectSize(vServer.clients) == numberOfClientsPerServer)
-    {
-        vServer.inLobby = false;
         startServerGame(vServer.id);
-    }
 }
 
 function startServerGame(serverid)
 {
+    virtualServers[serverid].inLobby = false;
     var clients = Object.keys(virtualServers[serverid].clients);
     virtualServers[serverid].place = clients.length;
     io.to(serverid).emit('startGame', {players: clients});
@@ -183,6 +181,12 @@ function newConnetcion(socket){
                 var place = virtualServers[socket.serverId].place;
                 socket.broadcast.to(socket.serverId).emit('KO', {id: socket.id, place: place});
                 virtualServers[socket.serverId].place--;
+
+                if(Object.values(virtualServers[socket.serverId].length == 0))
+                {
+                    delete virtualServers[socket.serverId];
+                }
+                    
             }
         }    
     });

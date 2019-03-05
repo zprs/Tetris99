@@ -1,0 +1,20 @@
+{
+  "short_name": "Tetris 99",
+  "name": "Tetris 99",
+  "icons": [
+    {
+      "src": "/images/icons-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/images/icons-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "background_color": "#2772c7",
+  "display": "standalone",
+  "scope": "/Tetris99/",
+  "theme_color": "#ff6040"
+}
