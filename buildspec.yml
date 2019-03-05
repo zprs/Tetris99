@@ -6,7 +6,7 @@ phases:
       - echo Logging in to Amazon ECR...
       - aws --version
       - eval $(aws ecr get-login --no-include-email --region us-west-1 | sed 's|https://||')
-      - REPOSITORY_URI=053186002895.dkr.ecr.us-west-1.amazonaws.com/space-base-images-ecr
+      - REPOSITORY_URI=053186002895.dkr.ecr.us-west-1.amazonaws.com/t66-images-repo
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
   build:
     commands:
@@ -21,6 +21,6 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"space-base","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"T66","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
     files: imagedefinitions.json
