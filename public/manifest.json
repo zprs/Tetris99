@@ -1,6 +1,6 @@
 {
-  "short_name": "Tetris 99",
-  "name": "Tetris 99",
+  "short_name": "T66",
+  "name": "T66",
   "icons": [
     {
       "src": "/images/icons-192.png",
@@ -15,6 +15,5 @@
   ],
   "background_color": "#2772c7",
   "display": "standalone",
-  "scope": "/Tetris99/",
   "theme_color": "#ff6040"
 }
