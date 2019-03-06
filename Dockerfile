@@ -16,7 +16,7 @@ RUN npm install uglify-es -g
 
 COPY . .
 
-RUN uglifyjs ./public/index.js -c -m --mangle-props reserved=[text,fadeIn,fadeOut,removeAttr,css,width,height,attr,val,animate,click,ready,keyup,keypress,on],regex=/_$/,keep_quoted --output ./public/script.js
+RUN uglifyjs ./index.js -c -m --mangle-props reserved=[text,fadeIn,fadeOut,removeAttr,css,width,height,attr,val,animate,click,ready,keyup,keypress,on],regex=/_$/,keep_quoted --output ./public/script.js
 
 EXPOSE 8080
 CMD ["pm2-runtime", "index.js"]
