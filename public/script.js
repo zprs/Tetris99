@@ -46,8 +46,8 @@ window.addEventListener('resize', function(event){
 
 function setup(){
     //socket = io.connect('http://' + $('#connectTo').val());
-    //socket = io.connect('http://99.30.176.150:8080');
-    socket = io.connect('http://localhost:8080');
+    socket = io.connect('http://t66-alb-1977116731.us-west-1.elb.amazonaws.com/');
+    //socket = io.connect('http://localhost:8080');
     socket.on('updateLobby', updateLobby);
     socket.on('startGame', commenceGame);
     socket.on('gridUpdates', updateGrids);
