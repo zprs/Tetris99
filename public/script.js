@@ -39,7 +39,7 @@ window.addEventListener('resize', function(event){
     playStartX = canvas.width / 2 - playWidth / 2;
     playStartY = canvas.height / 2 - playHeight / 2;
 
-    if(!gameStarted && inLobby)
+    if(!gameStarted && !gameOver && inLobby)
         updateLobby(lobbyPlayers);
 });
 
