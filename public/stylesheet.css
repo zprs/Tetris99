@@ -86,17 +86,14 @@ button {
     font-family: 'Rubik', sans-serif;
     vertical-align: center;
     font-size: 2vh;
-
     width: 20vh;
     height: 5vh;
     display: inline-block;
     margin-top: 5%;
-
     margin-left: calc(50% - 10vh);
-
     border: .5vh solid white;
     border-radius: 1vh;
-    background-color: rgb(255, 255, 255, 0);
+    background-color: transparent;
     transition: 0.2s;
 }
 
